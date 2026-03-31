@@ -41,6 +41,11 @@ const checkAutoRefresh      = document.getElementById('check-auto-refresh');
 const btnSettingsSave       = document.getElementById('btn-settings-save');
 const btnSettingsCancel     = document.getElementById('btn-settings-cancel');
 
+// ── 북마크 관리 DOM ──
+const btnImportHtml        = document.getElementById('btn-import-html');
+const btnExportHtml        = document.getElementById('btn-export-html');
+const inputBookmarkFile     = document.getElementById('input-bookmark-file');
+
 // ── 상태 ──────────────────────────────────────────────────────
 let sites = [];          // { id, name, url, favicon }[]
 let editingId = null;    // 현재 편집 중인 사이트 ID (null = 신규)
@@ -339,6 +344,109 @@ btnSettingsCancel.addEventListener('click', closeSettingsModal);
 modalSettingsBackdrop.addEventListener('click', (e) => {
   if (e.target === modalSettingsBackdrop) closeSettingsModal();
 });
+
+// 북마크 내보내기 (Export)
+btnExportHtml.addEventListener('click', () => {
+  if (sites.length === 0) {
+    alert('내보낼 사이트가 없습니다.');
+    return;
+  }
+  exportBookmarksHTML();
+});
+
+// 북마크 가져오기 (Import)
+btnImportHtml.addEventListener('click', () => {
+  inputBookmarkFile.click();
+});
+
+inputBookmarkFile.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    importBookmarksHTML(event.target.result);
+    inputBookmarkFile.value = ''; // 초기화
+  };
+  reader.readAsText(file);
+});
+
+async function exportBookmarksHTML() {
+  const header = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<!-- This is an automatically generated file.
+     It will be read and classified freely by browser. -->
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<TITLE>Bookmarks</TITLE>
+<H1>Bookmarks</H1>
+<DL><p>
+`;
+  let body = '';
+  sites.forEach(site => {
+    body += `    <DT><A HREF="${site.url}" ADD_DATE="${Math.floor(Date.now() / 1000)}">${site.name}</A>\n`;
+  });
+  const footer = `</DL><p>`;
+  
+  const html = header + body + footer;
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `speeddial_bookmarks_${new Date().toISOString().slice(0, 10)}.html`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function importBookmarksHTML(htmlContent) {
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlContent, 'text/html');
+    const anchors = Array.from(doc.querySelectorAll('a'));
+    
+    if (anchors.length === 0) {
+      alert('유효한 북마크를 찾을 수 없습니다.');
+      return;
+    }
+
+    let addedCount = 0;
+    let duplicateCount = 0;
+
+    for (const a of anchors) {
+      if (sites.length >= MAX_SITES) break;
+
+      const url = a.getAttribute('href');
+      const name = a.textContent.trim() || 'No Name';
+
+      if (!isValidUrl(url)) continue;
+
+      // 중복 체크
+      const isDuplicate = sites.some(s => s.url === url);
+      if (isDuplicate) {
+        duplicateCount++;
+        continue;
+      }
+
+      // 추가
+      const faviconUrl = FAVICON_API(new URL(url).hostname);
+      sites.push({ id: generateId(), name, url, favicon: faviconUrl });
+      addedCount++;
+    }
+
+    if (addedCount > 0) {
+      await saveSites();
+      renderGrid();
+      alert(`${addedCount}개의 사이트를 가져왔습니다. (중복 ${duplicateCount}개 제외)`);
+    } else if (duplicateCount > 0) {
+      alert(`모든 사이트가 이미 등록되어 있습니다. (중복 ${duplicateCount}개 제외)`);
+    } else {
+      alert('가져올 수 있는 유효한 사이트가 없습니다.');
+    }
+
+  } catch (err) {
+    console.error('Import error:', err);
+    alert('파일을 파싱하는 중 오류가 발생했습니다.');
+  }
+}
 
 btnSettingsSave.addEventListener('click', async () => {
   settings.cols = parseInt(inputCols.value) || 10;

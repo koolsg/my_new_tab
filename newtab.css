@@ -175,7 +175,7 @@ body.bg-loaded::before {
 /* ---------- 검색바 ---------- */
 #search-wrapper {
   position: absolute;
-  top: 25vh;
+  top: 20vh;
   width: 100%;
   max-width: 600px;
 }
@@ -534,11 +534,11 @@ select:focus {
   transition: .3s;
 }
 
-input:checked + .slider {
+input:checked+.slider {
   background-color: var(--accent);
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
   transform: translateX(14px);
 }
 
