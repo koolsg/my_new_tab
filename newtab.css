@@ -18,10 +18,14 @@
   --cols: 10;
   --gap: 20px;
 
-  --glass-bg: rgba(255, 255, 255, 0.12);
+  --glass-bg: rgba(255, 255, 255, 0.05);
   --glass-border: rgba(255, 255, 255, 0.22);
   --glass-hover: rgba(255, 255, 255, 0.22);
   --glass-blur: 16px;
+
+  /* Layout Positions */
+  --search-top: 20vh;
+  --grid-top: 10vh;
 
   --text-primary: #ffffff;
   --text-secondary: rgba(255, 255, 255, 0.65);
@@ -168,14 +172,14 @@ body.bg-loaded::before {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start; /* Changed to flex-start to allow margin-top control */
   padding: 0 60px;
 }
 
 /* ---------- 검색바 ---------- */
 #search-wrapper {
   position: absolute;
-  top: 20vh;
+  top: var(--search-top);
   width: 100%;
   max-width: 600px;
 }
@@ -229,6 +233,8 @@ body.bg-loaded::before {
   grid-template-columns: repeat(var(--cols), var(--card-width));
   gap: var(--gap);
   justify-content: center;
+  margin-top: calc(var(--search-top) + var(--grid-top) + 80px); /* Position relative to search bar or top */
+  padding-bottom: 60px;
 }
 
 /* ---------- 사이트 카드 ---------- */
@@ -383,8 +389,7 @@ body.bg-loaded::before {
 }
 
 /* ---------- 모달 ---------- */
-#modal-backdrop,
-#modal-settings-backdrop {
+#modal-backdrop {
   position: fixed;
   inset: 0;
   z-index: 1000;
@@ -394,6 +399,19 @@ body.bg-loaded::before {
   display: flex;
   align-items: center;
   justify-content: center;
+  animation: fadeIn 0.15s ease;
+}
+
+#modal-settings-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: transparent; /* No dimming */
+  backdrop-filter: none;    /* No blur for live preview */
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* Stuck to left */
+  padding-left: 40px;
   animation: fadeIn 0.15s ease;
 }
 
@@ -412,8 +430,7 @@ body.bg-loaded::before {
   }
 }
 
-#modal,
-.modal-content {
+#modal {
   background: rgba(18, 18, 32, 0.92);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-modal);
@@ -424,6 +441,30 @@ body.bg-loaded::before {
   animation: slideUp 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+.modal-content {
+  background: rgba(18, 18, 32, 0.95); /* Slightly more opaque for sidebar */
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-modal);
+  padding: 28px 32px;
+  width: 400px;
+  max-width: calc(100vw - 80px);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); /* Stronger shadow since no backdrop */
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  animation: slideInLeft 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Custom scrollbar for sidebar */
+.modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+.modal-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+}
+
 @keyframes slideUp {
   from {
     transform: translateY(16px);
@@ -432,6 +473,17 @@ body.bg-loaded::before {
 
   to {
     transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
     opacity: 1;
   }
 }
@@ -555,6 +607,25 @@ input:checked+.slider:before {
   justify-content: flex-end;
   gap: 10px;
   margin-top: 28px;
+}
+
+.range-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.range-row input[type="range"] {
+  flex: 1;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.range-row span {
+  font-size: 13px;
+  font-weight: 500;
+  min-width: 40px;
+  color: var(--accent);
 }
 
 .form-group {

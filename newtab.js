@@ -41,6 +41,16 @@ const checkAutoRefresh      = document.getElementById('check-auto-refresh');
 const btnSettingsSave       = document.getElementById('btn-settings-save');
 const btnSettingsCancel     = document.getElementById('btn-settings-cancel');
 
+// ── 고급 설정 DOM ──
+const inputSearchTop       = document.getElementById('input-search-top');
+const labelSearchTop       = document.getElementById('label-search-top');
+const inputGridTop         = document.getElementById('input-grid-top');
+const labelGridTop         = document.getElementById('label-grid-top');
+const inputGlassOpacity    = document.getElementById('input-glass-opacity');
+const labelGlassOpacity    = document.getElementById('label-glass-opacity');
+const inputGlassBlur       = document.getElementById('input-glass-blur');
+const labelGlassBlur       = document.getElementById('label-glass-blur');
+
 // ── 북마크 관리 DOM ──
 const btnImportHtml        = document.getElementById('btn-import-html');
 const btnExportHtml        = document.getElementById('btn-export-html');
@@ -55,7 +65,11 @@ let settings = {
   cols: 10,
   cardWidth: 100,
   searchEngine: 'https://www.google.com/search',
-  autoRefresh: true
+  autoRefresh: true,
+  searchTop: 20,
+  gridTop: 10,
+  glassOpacity: 5,
+  glassBlur: 16
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -135,9 +149,18 @@ async function saveSettings() {
 
 function applySettings() {
   // CSS 변수 적용
-  document.documentElement.style.setProperty('--cols', settings.cols);
-  document.documentElement.style.setProperty('--card-width', `${settings.cardWidth}px`);
+  const root = document.documentElement;
+  root.style.setProperty('--cols', settings.cols);
+  root.style.setProperty('--card-width', `${settings.cardWidth}px`);
   
+  // 고급 레이아웃 적용
+  root.style.setProperty('--search-top', `${settings.searchTop}vh`);
+  root.style.setProperty('--grid-top', `${settings.gridTop}vh`);
+  
+  // 글래스모피즘 적용
+  root.style.setProperty('--glass-bg', `rgba(255, 255, 255, ${settings.glassOpacity / 100})`);
+  root.style.setProperty('--glass-blur', `${settings.glassBlur}px`);
+
   // 검색 엔진 적용
   searchForm.action = settings.searchEngine;
 }
@@ -333,6 +356,17 @@ function openSettingsModal() {
   inputCardWidth.value = settings.cardWidth;
   selectSearchEngine.value = settings.searchEngine;
   checkAutoRefresh.checked = settings.autoRefresh;
+
+  // 고급 설정 값 채우기
+  inputSearchTop.value = settings.searchTop;
+  labelSearchTop.textContent = `${settings.searchTop}%`;
+  inputGridTop.value = settings.gridTop;
+  labelGridTop.textContent = `${settings.gridTop}%`;
+  inputGlassOpacity.value = settings.glassOpacity;
+  labelGlassOpacity.textContent = `${settings.glassOpacity}%`;
+  inputGlassBlur.value = settings.glassBlur;
+  labelGlassBlur.textContent = `${settings.glassBlur}px`;
+
   modalSettingsBackdrop.classList.remove('hidden');
 }
 
@@ -344,6 +378,36 @@ btnSettingsCancel.addEventListener('click', closeSettingsModal);
 modalSettingsBackdrop.addEventListener('click', (e) => {
   if (e.target === modalSettingsBackdrop) closeSettingsModal();
 });
+
+// ── 실시간 미리보기 이벤트 ──
+
+function updateLivePreview() {
+  // 임시로 settings 객체 업데이트 (저장은 안 함)
+  const tempSettings = {
+    ...settings,
+    searchTop: parseInt(inputSearchTop.value),
+    gridTop: parseInt(inputGridTop.value),
+    glassOpacity: parseInt(inputGlassOpacity.value),
+    glassBlur: parseInt(inputGlassBlur.value)
+  };
+  
+  const root = document.documentElement;
+  root.style.setProperty('--search-top', `${tempSettings.searchTop}vh`);
+  root.style.setProperty('--grid-top', `${tempSettings.gridTop}vh`);
+  root.style.setProperty('--glass-bg', `rgba(255, 255, 255, ${tempSettings.glassOpacity / 100})`);
+  root.style.setProperty('--glass-blur', `${tempSettings.glassBlur}px`);
+  
+  // 라벨 업데이트
+  labelSearchTop.textContent = `${tempSettings.searchTop}%`;
+  labelGridTop.textContent = `${tempSettings.gridTop}%`;
+  labelGlassOpacity.textContent = `${tempSettings.glassOpacity}%`;
+  labelGlassBlur.textContent = `${tempSettings.glassBlur}px`;
+}
+
+inputSearchTop.addEventListener('input', updateLivePreview);
+inputGridTop.addEventListener('input', updateLivePreview);
+inputGlassOpacity.addEventListener('input', updateLivePreview);
+inputGlassBlur.addEventListener('input', updateLivePreview);
 
 // 북마크 내보내기 (Export)
 btnExportHtml.addEventListener('click', () => {
@@ -453,6 +517,12 @@ btnSettingsSave.addEventListener('click', async () => {
   settings.cardWidth = parseInt(inputCardWidth.value) || 100;
   settings.searchEngine = selectSearchEngine.value;
   settings.autoRefresh = checkAutoRefresh.checked;
+
+  // 고급 설정 저장
+  settings.searchTop = parseInt(inputSearchTop.value);
+  settings.gridTop = parseInt(inputGridTop.value);
+  settings.glassOpacity = parseInt(inputGlassOpacity.value);
+  settings.glassBlur = parseInt(inputGlassBlur.value);
 
   await saveSettings();
   applySettings();
