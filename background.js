@@ -51,13 +51,24 @@ async function prefetchImage() {
   }
 }
 
-// 1) 설치 시 바로 한 장 받아둔다
+// 1) 설치 시 바로 한 장 받아둔다 (초기 설치 시엔 무조건 한 장 필요)
 chrome.runtime.onInstalled.addListener(() => {
   prefetchImage();
 });
 
-// 2) 새 탭이 생성될 때마다 → 다음 탭용 이미지를 조용히 받아둔다
-chrome.tabs.onCreated.addListener((tab) => {
-  // newtab 인지 여부와 관계없이 프리페치 (어차피 빠름)
-  prefetchImage();
+// 2) 새 탭이 생성될 때마다 → 다음 탭용 이미지를 조용히 받아둔다 (설정 확인)
+chrome.tabs.onCreated.addListener(async (tab) => {
+  try {
+    const result = await chrome.storage.sync.get('settings');
+    const autoRefresh = (result.settings && result.settings.autoRefresh !== undefined) 
+      ? result.settings.autoRefresh 
+      : true;
+
+    if (autoRefresh) {
+      prefetchImage();
+    }
+  } catch (err) {
+    // 에러 시 안전하게 프리페치 시도
+    prefetchImage();
+  }
 });

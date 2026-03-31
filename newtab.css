@@ -4,26 +4,28 @@
    ============================================================ */
 
 /* ---------- 리셋 & 기본 ---------- */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
 :root {
-  --card-width:  100px;
+  --card-width: 100px;
   --card-height: 90px;
   --cols: 10;
   --gap: 20px;
 
-  --glass-bg:     rgba(255, 255, 255, 0.12);
+  --glass-bg: rgba(255, 255, 255, 0.12);
   --glass-border: rgba(255, 255, 255, 0.22);
-  --glass-hover:  rgba(255, 255, 255, 0.22);
-  --glass-blur:   16px;
+  --glass-hover: rgba(255, 255, 255, 0.22);
+  --glass-blur: 16px;
 
-  --text-primary:   #ffffff;
-  --text-secondary: rgba(255,255,255,0.65);
-  --text-dim:       rgba(255,255,255,0.4);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.65);
+  --text-dim: rgba(255, 255, 255, 0.4);
 
   --accent: #6c8ef7;
   --danger: #f07070;
@@ -33,7 +35,8 @@
   --radius-modal: 18px;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   color: var(--text-primary);
@@ -42,11 +45,13 @@ html, body {
 
 /* ---------- 배경 ---------- */
 body {
-  background: #0d0d1a; /* 이미지 로딩 전 폴백 */
+  background: #0d0d1a;
+  /* 이미지 로딩 전 폴백 */
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  transition: background-image 0s; /* 즉시 전환 */
+  transition: background-image 0s;
+  /* 즉시 전환 */
 }
 
 /* 배경 로드 완료 시 효과 (필요 시 추가) */
@@ -75,12 +80,10 @@ body.bg-loaded::before {
 #bg-overlay {
   position: fixed;
   inset: 0;
-  background: linear-gradient(
-    160deg,
-    rgba(0, 0, 0, 0.45) 0%,
-    rgba(0, 0, 0, 0.3)  50%,
-    rgba(0, 0, 0, 0.55) 100%
-  );
+  background: linear-gradient(160deg,
+      rgba(0, 0, 0, 0.45) 0%,
+      rgba(0, 0, 0, 0.3) 50%,
+      rgba(0, 0, 0, 0.55) 100%);
   z-index: 0;
   pointer-events: none;
 }
@@ -145,9 +148,9 @@ body.bg-loaded::before {
   -webkit-backdrop-filter: blur(var(--glass-blur));
   color: var(--text-secondary);
   cursor: pointer;
-  transition: 
-    background var(--transition), 
-    color var(--transition), 
+  transition:
+    background var(--transition),
+    color var(--transition),
     transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -165,16 +168,16 @@ body.bg-loaded::before {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  gap: 36px;
+  justify-content: center;
   padding: 0 60px;
 }
 
 /* ---------- 검색바 ---------- */
 #search-wrapper {
+  position: absolute;
+  top: 25vh;
   width: 100%;
   max-width: 600px;
-  margin-top: 33vh;
 }
 
 #search-form {
@@ -195,8 +198,8 @@ body.bg-loaded::before {
 }
 
 #search-box:focus-within {
-  background: rgba(255,255,255,0.18);
-  border-color: rgba(255,255,255,0.4);
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.4);
   box-shadow: 0 0 0 3px rgba(108, 142, 247, 0.25);
 }
 
@@ -258,10 +261,10 @@ body.bg-loaded::before {
 .site-card:hover {
   transform: translateY(-4px) scale(1.04);
   background: var(--glass-hover);
-  border-color: rgba(255,255,255,0.38);
+  border-color: rgba(255, 255, 255, 0.38);
   box-shadow:
-    0 8px 32px rgba(0,0,0,0.35),
-    0 0 0 1px rgba(255,255,255,0.1);
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
 .site-card:active {
@@ -270,23 +273,23 @@ body.bg-loaded::before {
 
 /* 파비콘 이미지 */
 .site-card .favicon {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
   object-fit: contain;
   flex-shrink: 0;
 }
 
 /* 파비콘 폴백 (첫 글자) */
 .site-card .favicon-fallback {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
   background: linear-gradient(135deg, var(--accent), #9b59b6);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 22px;
   font-weight: 600;
   color: #fff;
   flex-shrink: 0;
@@ -313,7 +316,7 @@ body.bg-loaded::before {
   height: 22px;
   border-radius: 50%;
   border: none;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   color: #fff;
   font-size: 13px;
   line-height: 1;
@@ -338,7 +341,7 @@ body.bg-loaded::before {
 
 .site-card.drag-over {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent), 0 8px 32px rgba(108,142,247,0.3);
+  box-shadow: 0 0 0 2px var(--accent), 0 8px 32px rgba(108, 142, 247, 0.3);
 }
 
 /* ---------- 추가 버튼 카드 ---------- */
@@ -352,7 +355,7 @@ body.bg-loaded::before {
   gap: 8px;
   border-radius: var(--radius-card);
   border: 1.5px dashed var(--glass-border);
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   cursor: pointer;
@@ -364,8 +367,8 @@ body.bg-loaded::before {
 }
 
 .add-card:hover {
-  background: rgba(255,255,255,0.1);
-  border-color: rgba(255,255,255,0.4);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
   color: var(--text-secondary);
 }
 
@@ -380,11 +383,12 @@ body.bg-loaded::before {
 }
 
 /* ---------- 모달 ---------- */
-#modal-backdrop {
+#modal-backdrop,
+#modal-settings-backdrop {
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   display: flex;
@@ -393,16 +397,23 @@ body.bg-loaded::before {
   animation: fadeIn 0.15s ease;
 }
 
-#modal-backdrop.hidden {
+#modal-backdrop.hidden,
+#modal-settings-backdrop.hidden {
   display: none;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
-#modal {
+#modal,
+.modal-content {
   background: rgba(18, 18, 32, 0.92);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-modal);
@@ -414,15 +425,136 @@ body.bg-loaded::before {
 }
 
 @keyframes slideUp {
-  from { transform: translateY(16px); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
-#modal h2 {
+#modal h2,
+.modal-content h2 {
   font-size: 17px;
   font-weight: 600;
   margin-bottom: 22px;
   color: var(--text-primary);
+}
+
+.settings-section {
+  margin-bottom: 24px;
+}
+
+.settings-section h3 {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.toggle-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.toggle-group span {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+/* Select box */
+select {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(108, 142, 247, 0.2);
+}
+
+/* Switch styling */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 34px;
+  height: 20px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: rgba(255, 255, 255, 0.15);
+  transition: .3s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+}
+
+input:checked + .slider {
+  background-color: var(--accent);
+}
+
+input:checked + .slider:before {
+  transform: translateX(14px);
+}
+
+.slider.round {
+  border-radius: 20px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+#settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 28px;
 }
 
 .form-group {
@@ -444,7 +576,7 @@ body.bg-loaded::before {
   padding: 10px 14px;
   border-radius: 10px;
   border: 1px solid var(--glass-border);
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
   font-size: 14px;
   font-family: inherit;
@@ -454,7 +586,7 @@ body.bg-loaded::before {
 
 .form-group input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(108,142,247,0.2);
+  box-shadow: 0 0 0 3px rgba(108, 142, 247, 0.2);
 }
 
 .form-group input::placeholder {
@@ -525,12 +657,12 @@ body.bg-loaded::before {
 }
 
 .btn-secondary {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
   color: var(--text-secondary);
 }
 
 .btn-secondary:hover {
-  background: rgba(255,255,255,0.15);
+  background: rgba(255, 255, 255, 0.15);
   color: var(--text-primary);
 }
 

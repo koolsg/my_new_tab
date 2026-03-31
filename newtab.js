@@ -32,10 +32,26 @@ const btnSettings   = document.getElementById('btn-settings');
 const searchForm    = document.getElementById('search-form');
 const searchInput   = document.getElementById('search-input');
 
+// ── 설정 모달 DOM ──
+const modalSettingsBackdrop = document.getElementById('modal-settings-backdrop');
+const inputCols            = document.getElementById('input-cols');
+const inputCardWidth       = document.getElementById('input-card-width');
+const selectSearchEngine    = document.getElementById('select-search-engine');
+const checkAutoRefresh      = document.getElementById('check-auto-refresh');
+const btnSettingsSave       = document.getElementById('btn-settings-save');
+const btnSettingsCancel     = document.getElementById('btn-settings-cancel');
+
 // ── 상태 ──────────────────────────────────────────────────────
 let sites = [];          // { id, name, url, favicon }[]
 let editingId = null;    // 현재 편집 중인 사이트 ID (null = 신규)
 let dragSrcIndex = null; // 드래그 출발 index
+
+let settings = {
+  cols: 10,
+  cardWidth: 100,
+  searchEngine: 'https://www.google.com/search',
+  autoRefresh: true
+};
 
 // ══════════════════════════════════════════════════════════════
 // 1. 배경 이미지
@@ -87,9 +103,9 @@ btnRefreshBg.addEventListener('click', async () => {
   await fetchAndApplyBackground();
 });
 
-// 설정 버튼 (현재는 사이트 추가 모달 실행)
+// 설정 버튼 클릭 → 설정 모달 열기
 btnSettings.addEventListener('click', () => {
-  openAddModal();
+  openSettingsModal();
 });
 
 // ══════════════════════════════════════════════════════════════
@@ -97,12 +113,28 @@ btnSettings.addEventListener('click', () => {
 // ══════════════════════════════════════════════════════════════
 
 async function loadSites() {
-  const result = await chrome.storage.sync.get('sites');
+  const result = await chrome.storage.sync.get(['sites', 'settings']);
   sites = result.sites || [];
+  if (result.settings) {
+    settings = { ...settings, ...result.settings };
+  }
 }
 
 async function saveSites() {
   await chrome.storage.sync.set({ sites });
+}
+
+async function saveSettings() {
+  await chrome.storage.sync.set({ settings });
+}
+
+function applySettings() {
+  // CSS 변수 적용
+  document.documentElement.style.setProperty('--cols', settings.cols);
+  document.documentElement.style.setProperty('--card-width', `${settings.cardWidth}px`);
+  
+  // 검색 엔진 적용
+  searchForm.action = settings.searchEngine;
 }
 
 function generateId() {
@@ -115,6 +147,9 @@ function generateId() {
 
 function renderGrid() {
   grid.innerHTML = '';
+
+  // 그리드 컬럼 수 동적 적용 (CSS 변수 기반이지만 JS에서도 맞춰줌)
+  grid.style.gridTemplateColumns = `repeat(${settings.cols}, var(--card-width))`;
 
   sites.forEach((site, index) => {
     const card = createSiteCard(site, index);
@@ -287,6 +322,36 @@ function closeModal() {
   editingId = null;
 }
 
+// ── 설정 모달 ──
+function openSettingsModal() {
+  inputCols.value = settings.cols;
+  inputCardWidth.value = settings.cardWidth;
+  selectSearchEngine.value = settings.searchEngine;
+  checkAutoRefresh.checked = settings.autoRefresh;
+  modalSettingsBackdrop.classList.remove('hidden');
+}
+
+function closeSettingsModal() {
+  modalSettingsBackdrop.classList.add('hidden');
+}
+
+btnSettingsCancel.addEventListener('click', closeSettingsModal);
+modalSettingsBackdrop.addEventListener('click', (e) => {
+  if (e.target === modalSettingsBackdrop) closeSettingsModal();
+});
+
+btnSettingsSave.addEventListener('click', async () => {
+  settings.cols = parseInt(inputCols.value) || 10;
+  settings.cardWidth = parseInt(inputCardWidth.value) || 100;
+  settings.searchEngine = selectSearchEngine.value;
+  settings.autoRefresh = checkAutoRefresh.checked;
+
+  await saveSettings();
+  applySettings();
+  renderGrid();
+  closeSettingsModal();
+});
+
 btnCancel.addEventListener('click', closeModal);
 modalBackdrop.addEventListener('click', (e) => {
   if (e.target === modalBackdrop) closeModal();
@@ -415,5 +480,6 @@ function getFaviconUrl(url) {
 (async function init() {
   // 배경 이미지와 사이트 데이터를 병렬 로드
   await Promise.all([loadBackground(), loadSites()]);
+  applySettings(); // 설정 적용
   renderGrid();
 })();

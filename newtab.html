@@ -96,6 +96,54 @@
     </div>
   </div>
 
+  <!-- 설정 모달 -->
+  <div id="modal-settings-backdrop" class="hidden">
+    <div id="modal-settings" class="modal-content">
+      <h2>설정</h2>
+      
+      <div class="settings-section">
+        <h3>그리드 레이아웃</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="input-cols">가로 열 개수</label>
+            <input type="number" id="input-cols" min="1" max="20" />
+          </div>
+          <div class="form-group">
+            <label for="input-card-width">카드 너비 (px)</label>
+            <input type="number" id="input-card-width" min="40" max="300" />
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>검색 엔진</h3>
+        <div class="form-group">
+          <select id="select-search-engine">
+            <option value="https://www.google.com/search">Google</option>
+            <option value="https://search.naver.com/search.naver">Naver</option>
+            <option value="https://www.bing.com/search">Bing</option>
+            <option value="https://duckduckgo.com/">DuckDuckGo</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="toggle-group">
+          <span>배경화면 자동 새로고침</span>
+          <label class="switch">
+            <input type="checkbox" id="check-auto-refresh">
+            <span class="slider round"></span>
+          </label>
+        </div>
+      </div>
+
+      <div id="settings-actions">
+        <button id="btn-settings-cancel" class="btn-secondary">취소</button>
+        <button id="btn-settings-save" class="btn-primary">저장</button>
+      </div>
+    </div>
+  </div>
+
   <script src="newtab.js"></script>
 </body>
 </html>
