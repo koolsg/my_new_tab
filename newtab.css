@@ -1,0 +1,548 @@
+/* ============================================================
+   newtab.css — My Speed Dial
+   글래스모피즘 + 랜덤 배경 이미지 + 10열 그리드
+   ============================================================ */
+
+/* ---------- 리셋 & 기본 ---------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --card-width:  100px;
+  --card-height: 90px;
+  --cols: 10;
+  --gap: 20px;
+
+  --glass-bg:     rgba(255, 255, 255, 0.12);
+  --glass-border: rgba(255, 255, 255, 0.22);
+  --glass-hover:  rgba(255, 255, 255, 0.22);
+  --glass-blur:   16px;
+
+  --text-primary:   #ffffff;
+  --text-secondary: rgba(255,255,255,0.65);
+  --text-dim:       rgba(255,255,255,0.4);
+
+  --accent: #6c8ef7;
+  --danger: #f07070;
+
+  --transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  --radius-card: 14px;
+  --radius-modal: 18px;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+/* ---------- 배경 ---------- */
+body {
+  background: #0d0d1a; /* 이미지 로딩 전 폴백 */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: background-image 0s; /* 즉시 전환 */
+}
+
+/* 배경 로드 완료 시 효과 (필요 시 추가) */
+body.bg-loaded {
+  transition: background-color 0.3s ease;
+}
+
+/* 이미지 fade-in 효과를 위한 ::before pseudo */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: inherit;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  z-index: -1;
+}
+
+body.bg-loaded::before {
+  opacity: 1;
+}
+
+/* 배경 오버레이 — 어두운 그라디언트로 카드 가독성 확보 */
+#bg-overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(
+    160deg,
+    rgba(0, 0, 0, 0.45) 0%,
+    rgba(0, 0, 0, 0.3)  50%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ---------- 배경 크레딧 + 새로고침 ---------- */
+#bg-controls {
+  position: fixed;
+  bottom: 18px;
+  right: 22px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#bg-credit {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.02em;
+}
+
+#btn-refresh-bg {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 13px;
+  border-radius: 20px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+#btn-refresh-bg:hover {
+  background: var(--glass-hover);
+  color: var(--text-primary);
+}
+
+#btn-refresh-bg svg {
+  flex-shrink: 0;
+}
+
+#btn-settings {
+  position: fixed;
+  bottom: 18px;
+  left: 22px;
+  z-index: 100;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: 
+    background var(--transition), 
+    color var(--transition), 
+    transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#btn-settings:hover {
+  background: var(--glass-hover);
+  color: var(--text-primary);
+  transform: rotate(90deg);
+}
+
+/* ---------- 메인 레이아웃 ---------- */
+#main {
+  position: relative;
+  z-index: 10;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 36px;
+  padding: 0 60px;
+}
+
+/* ---------- 검색바 ---------- */
+#search-wrapper {
+  width: 100%;
+  max-width: 600px;
+  margin-top: 33vh;
+}
+
+#search-form {
+  width: 100%;
+}
+
+#search-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-radius: 30px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
+}
+
+#search-box:focus-within {
+  background: rgba(255,255,255,0.18);
+  border-color: rgba(255,255,255,0.4);
+  box-shadow: 0 0 0 3px rgba(108, 142, 247, 0.25);
+}
+
+#search-icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+#search-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-family: inherit;
+  caret-color: var(--accent);
+}
+
+#search-input::placeholder {
+  color: var(--text-dim);
+}
+
+/* ---------- Speed Dial 그리드 ---------- */
+#grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--card-width));
+  gap: var(--gap);
+  justify-content: center;
+}
+
+/* ---------- 사이트 카드 ---------- */
+.site-card {
+  width: var(--card-width);
+  height: var(--card-height);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  cursor: pointer;
+  text-decoration: none;
+  color: var(--text-primary);
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform var(--transition),
+    background var(--transition),
+    border-color var(--transition),
+    box-shadow var(--transition);
+  user-select: none;
+}
+
+.site-card:hover {
+  transform: translateY(-4px) scale(1.04);
+  background: var(--glass-hover);
+  border-color: rgba(255,255,255,0.38);
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.35),
+    0 0 0 1px rgba(255,255,255,0.1);
+}
+
+.site-card:active {
+  transform: translateY(-2px) scale(1.02);
+}
+
+/* 파비콘 이미지 */
+.site-card .favicon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* 파비콘 폴백 (첫 글자) */
+.site-card .favicon-fallback {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), #9b59b6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+/* 사이트 이름 */
+.site-card .site-name {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(var(--card-width) - 16px);
+}
+
+/* 편집 버튼 (호버 시 표시) */
+.site-card .btn-edit-card {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.site-card:hover .btn-edit-card {
+  opacity: 1;
+}
+
+/* 드래그 중 스타일 */
+.site-card.dragging {
+  opacity: 0.45;
+  transform: scale(0.96);
+  cursor: grabbing;
+}
+
+.site-card.drag-over {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent), 0 8px 32px rgba(108,142,247,0.3);
+}
+
+/* ---------- 추가 버튼 카드 ---------- */
+.add-card {
+  width: var(--card-width);
+  height: var(--card-height);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius-card);
+  border: 1.5px dashed var(--glass-border);
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  cursor: pointer;
+  color: var(--text-dim);
+  transition:
+    background var(--transition),
+    border-color var(--transition),
+    color var(--transition);
+}
+
+.add-card:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.4);
+  color: var(--text-secondary);
+}
+
+.add-card .add-icon {
+  font-size: 26px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.add-card .add-label {
+  font-size: 11px;
+}
+
+/* ---------- 모달 ---------- */
+#modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.15s ease;
+}
+
+#modal-backdrop.hidden {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+#modal {
+  background: rgba(18, 18, 32, 0.92);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-modal);
+  padding: 28px 32px;
+  width: 380px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  animation: slideUp 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes slideUp {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+#modal h2 {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 22px;
+  color: var(--text-primary);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.form-group input {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255,255,255,0.08);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.form-group input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(108,142,247,0.2);
+}
+
+.form-group input::placeholder {
+  color: var(--text-dim);
+}
+
+/* favicon 미리보기 */
+#favicon-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  margin-bottom: 20px;
+}
+
+#favicon-preview {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: contain;
+  display: none;
+}
+
+#favicon-preview.visible {
+  display: block;
+}
+
+#favicon-status {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+/* 모달 액션 버튼 */
+#modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+#modal-actions-right {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-danger {
+  padding: 9px 20px;
+  border-radius: 10px;
+  border: none;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition), opacity var(--transition);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #849cf9;
+}
+
+.btn-secondary {
+  background: rgba(255,255,255,0.1);
+  color: var(--text-secondary);
+}
+
+.btn-secondary:hover {
+  background: rgba(255,255,255,0.15);
+  color: var(--text-primary);
+}
+
+.btn-danger {
+  background: rgba(240, 112, 112, 0.15);
+  color: var(--danger);
+}
+
+.btn-danger:hover {
+  background: rgba(240, 112, 112, 0.28);
+}
+
+.hidden {
+  display: none !important;
+}

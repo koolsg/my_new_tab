@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "My Speed Dial",
+  "version": "1.0.0",
+  "description": "A beautiful Speed Dial new tab page with random high-resolution backgrounds.",
+
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "permissions": ["storage"],
+
+  "host_permissions": [
+    "https://picsum.photos/*",
+    "https://fastly.picsum.photos/*",
+    "https://www.google.com/s2/favicons*"
+  ],
+
+  "icons": {
+    "16":  "icons/icon16.png",
+    "48":  "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
