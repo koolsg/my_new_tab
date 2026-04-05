@@ -80,10 +80,17 @@
         <input type="text" id="input-name" placeholder="사이트 이름" autocomplete="off" />
       </div>
 
-      <!-- favicon 미리보기 -->
+      <!-- favicon 미리보기 + 출처 선택 -->
       <div id="favicon-preview-row">
         <img id="favicon-preview" src="" alt="" />
-        <span id="favicon-status"></span>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <span id="favicon-status"></span>
+          <select id="select-favicon-source" style="background:#1e1e2e;color:#cdd6f4;border:1px solid #45475a;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;">
+            <option value="google">🔍 Google (자동, 고화질)</option>
+            <option value="chrome">🖥 Chrome 캐시</option>
+            <option value="letter">🔤 글자 아이콘</option>
+          </select>
+        </div>
       </div>
 
       <div id="modal-actions">

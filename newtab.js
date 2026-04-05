@@ -11,8 +11,10 @@
 
 // ── 상수 ──────────────────────────────────────────────────────
 const MAX_SITES = 30;
-const FAVICON_API = (hostname) =>
-  `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`;
+const FAVICON_GOOGLE = (url) =>
+  `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=128&fallback=404`;
+const FAVICON_CHROME = (url) =>
+  `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(url)}&size=64`;
 const PICSUM_URL = (seed) =>
   `https://picsum.photos/seed/${seed}/1920/1080`;
 
@@ -24,6 +26,7 @@ const inputUrl      = document.getElementById('input-url');
 const inputName     = document.getElementById('input-name');
 const faviconPreview = document.getElementById('favicon-preview');
 const faviconStatus  = document.getElementById('favicon-status');
+const selectFaviconSource = document.getElementById('select-favicon-source');
 const btnSave       = document.getElementById('btn-save');
 const btnCancel     = document.getElementById('btn-cancel');
 const btnDelete     = document.getElementById('btn-delete');
@@ -195,15 +198,28 @@ function createSiteCard(site, index) {
   card.draggable = true;
   card.dataset.index = index;
 
-  // ── favicon ──
+  // ── favicon: 사이트 설정 기반 ──
   const faviconEl = document.createElement('img');
   faviconEl.className = 'favicon';
   faviconEl.alt = site.name;
-  faviconEl.src = site.favicon || getFaviconUrl(site.url);
-  faviconEl.onerror = () => {
-    // 폴백: 첫 글자 이니셜
-    faviconEl.replaceWith(createFallbackIcon(site.name));
-  };
+  const src = site.faviconSource || 'google';
+  if (src === 'letter') {
+    const fallback = createFallbackIcon(site.name);
+    faviconEl.replaceWith(fallback);
+    // card에 faviconEl 대신 fallback을 써야 하므로, faviconEl은 더미 이용
+  } else if (src === 'chrome') {
+    faviconEl.onerror = () => faviconEl.replaceWith(createFallbackIcon(site.name));
+    faviconEl.src = FAVICON_CHROME(site.url);
+  } else {
+    // google (default)
+    faviconEl.onerror = () => {
+      const img2 = new Image();
+      img2.onload = () => { faviconEl.src = img2.src; };
+      img2.onerror = () => { faviconEl.replaceWith(createFallbackIcon(site.name)); };
+      img2.src = FAVICON_CHROME(site.url);
+    };
+    faviconEl.src = FAVICON_GOOGLE(site.url);
+  }
 
   // ── 사이트 이름 ──
   const nameEl = document.createElement('span');
@@ -327,6 +343,7 @@ function openAddModal() {
   faviconPreview.src = '';
   faviconPreview.classList.remove('visible');
   faviconStatus.textContent = '';
+  selectFaviconSource.value = 'google';
   btnDelete.classList.add('hidden');
   modalBackdrop.classList.remove('hidden');
   inputUrl.focus();
@@ -339,9 +356,10 @@ function openEditModal(site) {
   inputName.value = site.name;
   btnDelete.classList.remove('hidden');
   modalBackdrop.classList.remove('hidden');
+  selectFaviconSource.value = site.faviconSource || 'google';
 
   // favicon 미리보기
-  showFaviconPreview(site.url);
+  showFaviconPreview(site.url, site.faviconSource || 'google');
   inputUrl.focus();
 }
 
@@ -491,8 +509,7 @@ async function importBookmarksHTML(htmlContent) {
       }
 
       // 추가
-      const faviconUrl = FAVICON_API(new URL(url).hostname);
-      sites.push({ id: generateId(), name, url, favicon: faviconUrl });
+      sites.push({ id: generateId(), name, url, favicon: '' });
       addedCount++;
     }
 
@@ -543,7 +560,7 @@ inputUrl.addEventListener('input', () => {
   faviconDebounceTimer = setTimeout(() => {
     const url = inputUrl.value.trim();
     if (isValidUrl(url)) {
-      showFaviconPreview(url);
+      showFaviconPreview(url, selectFaviconSource.value);
       // 이름이 비어있으면 hostname으로 자동 채우기
       if (!inputName.value.trim()) {
         try {
@@ -554,13 +571,21 @@ inputUrl.addEventListener('input', () => {
   }, 500);
 });
 
-function showFaviconPreview(url) {
-  try {
-    const hostname = new URL(url).hostname;
-    const faviconUrl = FAVICON_API(hostname);
-    faviconStatus.textContent = '아이콘 로드 중...';
-    faviconPreview.classList.remove('visible');
+selectFaviconSource.addEventListener('change', () => {
+  const url = inputUrl.value.trim();
+  if (isValidUrl(url)) showFaviconPreview(url, selectFaviconSource.value);
+});
 
+function showFaviconPreview(url, source) {
+  source = source || selectFaviconSource.value || 'google';
+  faviconPreview.classList.remove('visible');
+  if (source === 'letter') {
+    faviconStatus.textContent = '글자 아이콘으로 표시';
+    return;
+  }
+  try {
+    const faviconUrl = source === 'chrome' ? FAVICON_CHROME(url) : FAVICON_GOOGLE(url);
+    faviconStatus.textContent = '아이콘 로드 중...';
     const testImg = new Image();
     testImg.onload = () => {
       faviconPreview.src = faviconUrl;
@@ -588,20 +613,16 @@ btnSave.addEventListener('click', async () => {
     return;
   }
 
-  let faviconUrl = '';
-  try {
-    faviconUrl = FAVICON_API(new URL(url).hostname);
-  } catch {}
+
+  const faviconSource = selectFaviconSource.value;
 
   if (editingId) {
-    // 편집
     const idx = sites.findIndex(s => s.id === editingId);
     if (idx !== -1) {
-      sites[idx] = { ...sites[idx], url, name, favicon: faviconUrl };
+      sites[idx] = { ...sites[idx], url, name, favicon: '', faviconSource };
     }
   } else {
-    // 신규 추가
-    sites.push({ id: generateId(), name, url, favicon: faviconUrl });
+    sites.push({ id: generateId(), name, url, favicon: '', faviconSource });
   }
 
   await saveSites();
@@ -644,13 +665,7 @@ function isValidUrl(str) {
   }
 }
 
-function getFaviconUrl(url) {
-  try {
-    return FAVICON_API(new URL(url).hostname);
-  } catch {
-    return '';
-  }
-}
+
 
 // ══════════════════════════════════════════════════════════════
 // 초기화

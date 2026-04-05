@@ -12,7 +12,7 @@
     "service_worker": "background.js"
   },
 
-  "permissions": ["storage"],
+  "permissions": ["storage", "favicon"],
 
   "host_permissions": [
     "https://picsum.photos/*",
