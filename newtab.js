@@ -508,7 +508,8 @@ async function importBookmarksHTML(htmlContent) {
 
   } catch (err) {
     console.error('Import error:', err);
-    alert('파일을 파싱하는 중 오류가 발생했습니다.');
+    console.error('Error stack:', err.stack);
+    alert(`파일을 파싱하는 중 오류가 발생했습니다: ${err.message}`);
   }
 }
 
