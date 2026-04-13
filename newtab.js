@@ -11,6 +11,7 @@
 
 // ── 상수 ──────────────────────────────────────────────────────
 const MAX_SITES = 30;
+const FAVICON_CACHE_VER = 'v2'; // 버전 변경 시 이전 캐시 자동 초기화
 const FAVICON_GOOGLE = (url) =>
   `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=128&fallback=404`;
 const FAVICON_CHROME = (url) =>
@@ -63,6 +64,7 @@ const inputBookmarkFile     = document.getElementById('input-bookmark-file');
 let sites = [];          // { id, name, url, favicon }[]
 let editingId = null;    // 현재 편집 중인 사이트 ID (null = 신규)
 let dragSrcIndex = null; // 드래그 출발 index
+let faviconCache = {};   // { [siteId]: base64DataUrl } — 메모리 캐시
 
 let settings = {
   cols: 10,
@@ -74,6 +76,86 @@ let settings = {
   glassOpacity: 5,
   glassBlur: 16
 };
+
+// ══════════════════════════════════════════════════════════════
+// 0. Favicon 캐시 — chrome.storage.local 기반
+// ══════════════════════════════════════════════════════════════
+
+/** Blob → base64 data URL 변환 */
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
+ * storage.local에서 현재 sites 목록의 favicon 캐시를 모두 불러와
+ * 메모리 faviconCache 맵에 채운다. 버전 불일치 시 이전 캐시 전체 삭제.
+ */
+async function loadFaviconCache() {
+  // 캐시 버전 확인: 불일치 시 이전 세션에서 저장된 불량 캐시 전체 삭제
+  const vResult = await chrome.storage.local.get('faviconCacheVer');
+  if (vResult.faviconCacheVer !== FAVICON_CACHE_VER) {
+    const allData = await chrome.storage.local.get(null);
+    const oldKeys = Object.keys(allData).filter(k => k.startsWith('favicon_'));
+    if (oldKeys.length > 0) {
+      await chrome.storage.local.remove(oldKeys);
+      console.log('[SpeedDial] Favicon cache cleared (version migration):', oldKeys.length, 'entries');
+    }
+    await chrome.storage.local.set({ faviconCacheVer: FAVICON_CACHE_VER });
+    faviconCache = {};
+    return; // 새로 비운 상태로 시작 (렌더링 시 cache miss 경로로 재쾐싱)
+  }
+
+  if (sites.length === 0) return;
+  const keys = sites.map(s => `favicon_${s.id}`);
+  const result = await chrome.storage.local.get(keys);
+  sites.forEach(s => {
+    const cached = result[`favicon_${s.id}`];
+    if (cached) faviconCache[s.id] = cached;
+  });
+}
+
+/**
+ * favicon을 Google API(sz=128)로만 fetch해 Base64로 캐싱.
+ * ⚠️ Chrome _favicon API는 폴백 전용 (chrome 내호 미방문 사이트 접속 시 지구본 반환하므로 캐싱 제외).
+ */
+async function cacheFavicon(siteId, url, source) {
+  if (source === 'letter') return; // 글자 아이콘은 캐시 불필요
+  if (source === 'chrome') return; // Chrome API는 지구본 아이콘 반환 가능 → 캐싱 안함
+  try {
+    const response = await fetch(FAVICON_GOOGLE(url)); // 항상 Google API(sz=128) 사용
+    if (!response.ok) {
+      // fallback=404 설정으로 실제 아이콘 없으면 404 반환 → 캐싱 안 함
+      console.log('[SpeedDial] Favicon not found (Google API):', new URL(url).hostname);
+      return;
+    }
+
+    const blob = await response.blob();
+    if (blob.size < 200) {
+      // 너무 작은 응답은 기본/빈 아이콘일 가능성 → 캐싱 제외
+      console.log('[SpeedDial] Favicon too small, skipping cache:', siteId);
+      return;
+    }
+
+    const base64 = await blobToBase64(blob);
+    await chrome.storage.local.set({ [`favicon_${siteId}`]: base64 });
+    faviconCache[siteId] = base64;
+    console.log('[SpeedDial] Favicon cached (128px):', siteId);
+  } catch (err) {
+    console.warn('[SpeedDial] Favicon cache failed:', err.message);
+    // 실패 시 캐싱 안 함 — 표시는 createSiteCard의 URL 폴백 로직이 담당
+  }
+}
+
+/** 사이트 삭제 시 연관 favicon 캐시도 제거 */
+async function deleteCachedFavicon(siteId) {
+  await chrome.storage.local.remove(`favicon_${siteId}`);
+  delete faviconCache[siteId];
+}
 
 // ══════════════════════════════════════════════════════════════
 // 1. 배경 이미지
@@ -198,27 +280,36 @@ function createSiteCard(site, index) {
   card.draggable = true;
   card.dataset.index = index;
 
-  // ── favicon: 사이트 설정 기반 ──
+  // ── favicon: 캐시 우선, 없으면 URL 폴백 + 백그라운드 캐싱 ──
   const faviconEl = document.createElement('img');
   faviconEl.className = 'favicon';
   faviconEl.alt = site.name;
   const src = site.faviconSource || 'google';
+
   if (src === 'letter') {
+    // 글자 아이콘 — 캐시 불필요
     const fallback = createFallbackIcon(site.name);
     faviconEl.replaceWith(fallback);
-    // card에 faviconEl 대신 fallback을 써야 하므로, faviconEl은 더미 이용
-  } else if (src === 'chrome') {
-    faviconEl.onerror = () => faviconEl.replaceWith(createFallbackIcon(site.name));
-    faviconEl.src = FAVICON_CHROME(site.url);
+  } else if (faviconCache[site.id]) {
+    // ⚡ 캐시 히트 — 즉시 표시 (네트워크 요청 없음)
+    faviconEl.src = faviconCache[site.id];
   } else {
-    // google (default)
-    faviconEl.onerror = () => {
-      const img2 = new Image();
-      img2.onload = () => { faviconEl.src = img2.src; };
-      img2.onerror = () => { faviconEl.replaceWith(createFallbackIcon(site.name)); };
-      img2.src = FAVICON_CHROME(site.url);
-    };
-    faviconEl.src = FAVICON_GOOGLE(site.url);
+    // 캐시 미스 — URL로 기존 방식 표시 후 백그라운드에서 캐싱 시도
+    const fallbackToLetter = () => faviconEl.replaceWith(createFallbackIcon(site.name));
+
+    if (src === 'chrome') {
+      faviconEl.onerror = fallbackToLetter;
+      faviconEl.src = FAVICON_CHROME(site.url);
+    } else {
+      // google (default)
+      faviconEl.onerror = () => {
+        faviconEl.onerror = fallbackToLetter;
+        faviconEl.src = FAVICON_CHROME(site.url);
+      };
+      faviconEl.src = FAVICON_GOOGLE(site.url);
+    }
+    // 캐시 없으면 백그라운드에서 저장 (다음 탭 열 때 즉시 표시 가능)
+    cacheFavicon(site.id, site.url, src);
   }
 
   // ── 사이트 이름 ──
@@ -619,10 +710,21 @@ btnSave.addEventListener('click', async () => {
   if (editingId) {
     const idx = sites.findIndex(s => s.id === editingId);
     if (idx !== -1) {
-      sites[idx] = { ...sites[idx], url, name, favicon: '', faviconSource };
+      const site = sites[idx];
+      const urlChanged  = site.url !== url;
+      const srcChanged  = (site.faviconSource || 'google') !== faviconSource;
+      sites[idx] = { ...site, url, name, favicon: '', faviconSource };
+
+      // URL 또는 소스가 바뀌면 캐시 무효화 후 재다운로드
+      if (urlChanged || srcChanged) {
+        await deleteCachedFavicon(editingId);
+        cacheFavicon(editingId, url, faviconSource); // 백그라운드에서 새로 캐싱
+      }
     }
   } else {
-    sites.push({ id: generateId(), name, url, favicon: '', faviconSource });
+    const newSite = { id: generateId(), name, url, favicon: '', faviconSource };
+    sites.push(newSite);
+    cacheFavicon(newSite.id, url, faviconSource); // 백그라운드에서 캐싱
   }
 
   await saveSites();
@@ -633,8 +735,10 @@ btnSave.addEventListener('click', async () => {
 // 삭제
 btnDelete.addEventListener('click', async () => {
   if (!editingId) return;
-  sites = sites.filter(s => s.id !== editingId);
+  const deletedId = editingId;
+  sites = sites.filter(s => s.id !== deletedId);
   await saveSites();
+  await deleteCachedFavicon(deletedId); // favicon 캐시도 함께 제거
   renderGrid();
   closeModal();
 });
@@ -675,5 +779,6 @@ function isValidUrl(str) {
   // 배경 이미지와 사이트 데이터를 병렬 로드
   await Promise.all([loadBackground(), loadSites()]);
   applySettings(); // 설정 적용
-  renderGrid();
+  await loadFaviconCache(); // storage에서 favicon 캐시 메모리로 로드
+  renderGrid(); // 캐시 준비 후 렌더링
 })();
